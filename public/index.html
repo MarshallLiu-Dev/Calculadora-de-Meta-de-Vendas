@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <title>Meta de Vendas</title>
+</head>
+
+<body>
+  <h1>Calculadora de Meta de Vendas</h1>
+
+  <div>
+    <label for="meta">Meta de Vendas do Mês:</label>
+    <input type="number" id="meta" placeholder="Ex: 80000" required>
+  </div>
+
+  <div>
+    <label for="totalVendido">Total Vendido até Hoje:</label>
+    <input type="number" id="totalVendido" placeholder="Ex: 75355.29" required>
+  </div>
+
+  <div>
+    <label for="diaAtual">Dia Atual:</label>
+    <input type="number" id="diaAtual" placeholder="Ex: 28" required>
+  </div>
+
+  <button onclick="calcular()">Calcular</button>
+
+  <h2>Resultados</h2>
+  <div id="resultados"></div>
+
+  <script>
+    function parseBrazilianNumber(value) {
+      return parseFloat(value.replace(/\./g, '').replace(',', '.'));
+    }
+
+    async function calcular() {
+      const meta = parseBrazilianNumber(document.getElementById('meta').value);
+      const totalVendido = parseBrazilianNumber(document.getElementById('totalVendido').value);
+      const diaAtual = Number(document.getElementById('diaAtual').value);
+
+      if (isNaN(meta) || isNaN(totalVendido) || !diaAtual || diaAtual > 31) {
+        alert('Preencha todos os campos corretamente.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/meta/calcular', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ meta, totalVendido, diaAtual })
+        });
+
+        const resultado = await response.json();
+
+        document.getElementById('resultados').innerHTML = `
+      <p>Média Diária de Vendas: R$ ${Number(resultado.mediaDiaria).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+      <p>Previsão para o Fim do Mês: R$ ${Number(resultado.previsaoFinal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+      <p>Porcentagem da Meta Atingida: ${Number(resultado.porcentagemMeta).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</p>
+      <p class="${resultado.excedente ? 'excedente' : 'faltante'}">
+        ${resultado.excedente ? 'Excedente' : 'Faltante'} para a Meta: R$ ${Number(resultado.diferencaMeta).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
+    `;
+      } catch (error) {
+        console.error('Erro ao calcular:', error);
+      }
+    }
+
+  </script>
+</body>
+
+</html>
